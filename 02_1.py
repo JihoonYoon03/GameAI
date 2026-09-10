@@ -1,10 +1,13 @@
 import copy
 # 상태를 나타내는 클래스
 class State:
+    id = 0
     def __init__(self, board, goal, depth=0):
         self.board = board
         self.depth = depth
         self.goal = goal
+        self.id = State.id
+        State.id += 1
     # i1과 i2를 교환하여서 새로운 상태를 반환한다.
     def get_new_board(self, i1, i2, depth):
         new_board = copy.deepcopy(self.board[:])
@@ -38,7 +41,8 @@ class State:
 # 초기 상태
 puzzle = [2, 8, 3, 1, 6, 4, 7, 0, 5]
 # 목표 상태
-goal = [1, 2, 3, 4, 5, 6, 7, 8, 0]
+goal = [1, 2, 3, 8, 0, 4, 7, 6, 5]
+
 
 # open 리스트
 open_queue = [ ]
@@ -46,6 +50,7 @@ open_queue.append(State(puzzle, goal))
 closed_queue = [ ]
 depth = 0
 count=1
+visited = { 0 : None }
 while len(open_queue) != 0:
     current = open_queue.pop(0) # OPEN 리스트의 앞에서 삭제
     print(count)
@@ -53,6 +58,15 @@ while len(open_queue) != 0:
     print(current)
     if current.board == goal:
         print("탐색 성공")
+        print(current.depth)
+        parent = visited[current.id]
+        path = []
+        while parent:
+            path.insert(0, parent)
+            parent = visited[parent.id]
+        path.append(current)
+        for node in path:
+            print(node)
         break
     depth = current.depth+1
     closed_queue.append(current)
@@ -62,4 +76,5 @@ while len(open_queue) != 0:
         if (state in closed_queue) or (state in open_queue): # 이미 거쳐간 노드이면
             continue # 노드를 버린다.
         else:
+            visited[state.id] = current
             open_queue.append(state) # OPEN 리스트의 끝에 추가
