@@ -1,69 +1,54 @@
+#2022184025 윤지훈
 import queue
 # 상태를 나타내는 클래스, f(n) 값을 저장한다.
 class State:
     id = 0
-    def __init__(self, board, goal, depth=0):
-        self.board = board # 현재의 보드 상태
-        self.depth = depth # 깊이
-        self.goal = goal # 목표 상태
+    def __init__(self, size, queens=[]):
+        self.size = size                # 보드의 크기
+        self.queens = queens            # 현재까지 배치된 퀸 위치
+        self.depth = len(self.queens)   # 깊이
+
         self.id = State.id
         State.id += 1
-    # i1과 i2를 교환하여서 새로운 상태를 반환한다.
-    def get_new_board(self, i1, i2, depth):
-        new_board = self.board[:]
-        new_board[i1], new_board[i2] = new_board[i2], new_board[i1]
-        return State(new_board, self.goal, depth)
+
     # 자식 노드를 확장하여서 리스트에 저장하여서 반환한다.
-    def expand(self, moves):
+    def expand(self):
         result = []
-        i = self.board.index(0) # 숫자 0(빈칸)의 위치를 찾는다.
-        if not i in [0, 3, 6] : # LEFT 연산자
-            result.append(self.get_new_board(i, i-1, moves))
-        if not i in [0, 1, 2] : # UP 연산자
-            result.append(self.get_new_board(i, i-3, moves))
-        if not i in [2, 5, 8]: # RIGHT 연산자
-            result.append(self.get_new_board(i, i+1, moves))
-        if not i in [6, 7, 8]: # DOWN 연산자
-            result.append(self.get_new_board(i, i+3, moves))
+        col = self.depth
+        for row in range(self.size):
+            new_queens = self.queens + [(col, row)]
+            result.append(State(self.size, new_queens))
         return result
 
     # f(n)을 계산하여 반환한다.
     def f(self):
         return self.h()+self.g()
 
-    # 휴리스틱 함수 값인 h(n)을 계산하여 반환한다.
-    # 현재 제 위치에 있지 않은 타일의 개수를 리스트 함축으로 계산한다.
+    # 겹치는 퀸 확인 및 점수 계산해 리턴
     def h(self):
         score = 0
-        for i in range(9):
-            if self.board[i]!=0 and self.board[i] != self.goal[i]:
-                score += 1
+        for i in range(len(self.queens)):
+            c1, r1 = self.queens[i]
+            for j in range(i + 1, len(self.queens)):
+                c2, r2 = self.queens[j]
+                # 같은 행
+                if r1 == r2:
+                    score += 1
+                # 같은 대각선
+                elif abs(c1 - c2) == abs(r1 - r2):
+                    score += 1
         return score
 
-    def h2(self):
-        score = 0
-        for i in range(9):
-            j = 0
-            while goal[j] is not self.board[i]:
-                j += 1
-            rowCur = int(i / 3)
-            colCur = int(i % 3)
-            row = int(j / 3)
-            col = int(j % 3)
-            scoreRow = abs(row - rowCur)
-            scoreCol = abs(col - colCur)
-            score += scoreRow + scoreCol
-        return score
-
+    
     # 시작 노드로부터의 깊이를 반환한다.
     def g(self):
         return self.depth
 
     def __eq__(self, other):
-        return self.board == other.board
+        return self.queens == other.queens
 
     def __ne__(self, other):
-        return self.board != other.board
+        return self.queens != other.queens
 
     # 상태와 상태를 비교하기 위하여 less than 연산자를 정의한다.
     def __lt__(self, other):
@@ -74,43 +59,58 @@ class State:
 
     # 객체를 출력할 때 사용한다.
     def __str__(self):
-        return f"f(n)={self.f()} h(n)={self.h()} g(n)={self.g()}\n"+\
-        str(self.board[:3]) +"\n"+\
-        str(self.board[3:6]) +"\n"+\
-        str(self.board[6:]) +"\n"
+        board = [["#" for j in range(self.size)] for i in range(self.size)]
+        for c, r in self.queens:
+            board[c][r] = 'Q'
+        printing = "\n"
+        for col in range(self.size):
+            for row in range(self.size):
+                printing += str(board[row][col]) + " "
+            printing += "\n"
+        return printing + "\n------------------"
 
-# 초기 상태
-puzzle = [2, 8, 3, 1, 6, 4, 7, 0, 5]
-# 목표 상태
-goal = [1, 2, 3, 8, 0, 4, 7, 6, 5]
 # open 리스트는 우선순위 큐로 생성한다.
 open_queue = queue.PriorityQueue()
-open_queue.put(State(puzzle, goal))
 closed_queue = [ ]
 depth = 0
 count = 0
 visited = { 0:None }
+
+board_size = int(input("보드의 크기를 입력하세요: "))
+board = [["#" for j in range(board_size)] for i in range(board_size)]  # 초기 상태
+open_queue.put(State(board_size))
+
 while not open_queue.empty():
     current = open_queue.get()
     count += 1
+    
     print(count)
     print(current)
-    if current.board == goal:
-        print("탐색 성공")
-        parent = visited[current.id]
-        path = []
-        while parent:
-            path.insert(0, parent)
-            parent = visited[parent.id]
-        path.append(current)
-        for node in path:
-            print(node)
-        break
-    depth = current.depth+1
-    for state in current.expand(depth):
+
+    if current.depth == board_size:
+        if current.h() == 0:
+            print("탐색 성공")
+            parent = visited[current.id]
+            path = []
+            while parent:
+                path.insert(0, parent)
+                parent = visited[parent.id]
+            path.append(current)
+            for node in path:
+                print(node)
+            print("탐색 횟수: ", count)
+            print("2022184025 윤지훈")
+            break
+        else:
+            continue
+
+    closed_queue.append(current)
+
+    for state in current.expand():
+        if state.h() != 0:
+            continue
         if state not in closed_queue and state not in open_queue.queue :
             open_queue.put(state)
-            closed_queue.append(current)
             visited[state.id] = current
         else:
             print ('탐색 실패')
