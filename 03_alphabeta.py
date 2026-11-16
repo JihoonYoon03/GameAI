@@ -96,7 +96,7 @@ while True:
     if len(empty_cells(game_board)) == 0 or game_over(game_board):
         break
     i = int()
-    if turn % 2 == 0:
+    if player == 'X':
         i, v = alphabeta(game_board, 9, -10000, 10000, player == 'X')
     else:
         while not valid_move(i):
